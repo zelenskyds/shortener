@@ -5,17 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type DB map[string]string
 
 func MakeRegistrUrl(base_url string, db DB) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodPost {
-			http.Error(res, "Метод неразрешён", http.StatusMethodNotAllowed)
-			return
-		}
-
 		data, err := io.ReadAll(req.Body)
 
 		if err != nil {
@@ -37,13 +34,7 @@ func MakeRegistrUrl(base_url string, db DB) http.HandlerFunc {
 
 func MakeGetUrl(db DB) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodGet {
-			http.Error(res, "Метод неразрешён", http.StatusMethodNotAllowed)
-
-			return
-		}
-
-		id := req.PathValue("id")
+		id := chi.URLParam(req, "id")
 
 		url, ok := db[id]
 
@@ -56,15 +47,16 @@ func MakeGetUrl(db DB) http.HandlerFunc {
 	})
 }
 
+func newRouter(base_url string, db DB) http.Handler {
+	router := chi.NewRouter()
+	router.Post("/", MakeRegistrUrl(base_url, db))
+	router.Get("/{id}", MakeGetUrl(db))
+	return router
+}
+
 func RunApp(base_url string) {
 	db := make(DB)
-
-	mux := http.NewServeMux()
-
-	mux.Handle(`/{$}`, MakeRegistrUrl(base_url, db))
-	mux.Handle(`/{id}`, MakeGetUrl(db))
-
-	err := http.ListenAndServe(base_url, mux)
+	err := http.ListenAndServe(base_url, newRouter(base_url, db))
 	if err != nil {
 		panic(err)
 	}

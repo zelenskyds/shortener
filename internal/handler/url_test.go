@@ -39,7 +39,7 @@ func TestMakeRegistrUrl(t *testing.T) {
 			req.Header.Set("Content-Type", "text/plain")
 			res := httptest.NewRecorder()
 
-			MakeRegistrUrl("localhost:8080", db).ServeHTTP(res, req)
+			newRouter("localhost:8080", db).ServeHTTP(res, req)
 			result := res.Result()
 			defer result.Body.Close()
 
@@ -106,8 +106,7 @@ func TestMakeGetUrl(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := DB{"abc123": "https://example.com/path?q=hello"}
-			mux := http.NewServeMux()
-			mux.Handle("/{id}", MakeGetUrl(db))
+			mux := newRouter("localhost:8080", db)
 			req := httptest.NewRequest(tt.method, tt.path, nil)
 			res := httptest.NewRecorder()
 
