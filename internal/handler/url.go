@@ -11,7 +11,7 @@ import (
 
 type DB map[string]string
 
-func MakeRegistrUrl(base_url string, db DB) http.HandlerFunc {
+func MakeRegistrURL(baseURL string, baseGetURL string, db DB) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		data, err := io.ReadAll(req.Body)
 
@@ -24,7 +24,7 @@ func MakeRegistrUrl(base_url string, db DB) http.HandlerFunc {
 
 		db[id] = string(data)
 
-		body := fmt.Sprintf("http://%s/%s", base_url, id)
+		body := fmt.Sprintf("http://%s/%s", baseGetURL, id)
 
 		res.Header().Set("Content-Type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
@@ -32,7 +32,7 @@ func MakeRegistrUrl(base_url string, db DB) http.HandlerFunc {
 	})
 }
 
-func MakeGetUrl(db DB) http.HandlerFunc {
+func MakeGetURL(db DB) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		id := chi.URLParam(req, "id")
 
@@ -47,16 +47,16 @@ func MakeGetUrl(db DB) http.HandlerFunc {
 	})
 }
 
-func newRouter(base_url string, db DB) http.Handler {
+func newRouter(baseURL string, baseGetURL string, db DB) http.Handler {
 	router := chi.NewRouter()
-	router.Post("/", MakeRegistrUrl(base_url, db))
-	router.Get("/{id}", MakeGetUrl(db))
+	router.Post("/", MakeRegistrURL(baseURL, baseGetURL, db))
+	router.Get("/{id}", MakeGetURL(db))
 	return router
 }
 
-func RunApp(base_url string) {
+func RunApp(baseURL string, baseGetURL string) {
 	db := make(DB)
-	err := http.ListenAndServe(base_url, newRouter(base_url, db))
+	err := http.ListenAndServe(baseURL, newRouter(baseURL, baseGetURL, db))
 	if err != nil {
 		panic(err)
 	}

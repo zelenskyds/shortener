@@ -2,7 +2,8 @@ package config
 
 import "fmt"
 
-var BASE_HOST = "localhost"
-var BASE_PORT = "8080"
+var BaseHost = "localhost"
+var BasePort = "8080"
 
-var BASE_URL = fmt.Sprintf("%s:%s", BASE_HOST, BASE_PORT)
+var BaseURL = fmt.Sprintf("%s:%s", BaseHost, BasePort)
+var BaseGetURL = BaseURL

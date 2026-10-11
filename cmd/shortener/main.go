@@ -6,5 +6,6 @@ import (
 )
 
 func main() {
-	handler.RunApp(config.BASE_URL)
+	ParseFlag()
+	handler.RunApp(config.BaseURL, config.BaseGetURL)
 }
