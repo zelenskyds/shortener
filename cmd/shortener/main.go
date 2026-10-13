@@ -1,3 +1,11 @@
 package main
 
-func main() {}
+import (
+	"github.com/zelenskyds/shortener/internal/config"
+	"github.com/zelenskyds/shortener/internal/handler"
+)
+
+func main() {
+	ParseFlag()
+	handler.RunApp(config.BaseURL, config.BaseGetURL)
+}
