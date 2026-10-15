@@ -12,12 +12,24 @@ func TestMakeRegistrURL(t *testing.T) {
 		name       string
 		method     string
 		body       string
+		baseURL    string
+		wantPrefix string
 		wantStatus int
 	}{
 		{
 			name:       "create short URL",
 			method:     http.MethodPost,
 			body:       "https://example.com/path?q=hello",
+			baseURL:    "http://localhost:8080",
+			wantPrefix: "http://localhost:8080/",
+			wantStatus: http.StatusCreated,
+		},
+		{
+			name:       "preserve HTTPS and base path",
+			method:     http.MethodPost,
+			body:       "https://example.com/path?q=hello",
+			baseURL:    "https://short.example.com/links/",
+			wantPrefix: "https://short.example.com/links/",
 			wantStatus: http.StatusCreated,
 		},
 		{
@@ -39,7 +51,7 @@ func TestMakeRegistrURL(t *testing.T) {
 			req.Header.Set("Content-Type", "text/plain")
 			res := httptest.NewRecorder()
 
-			newRouter("localhost:8080", "localhost:8080", db).ServeHTTP(res, req)
+			newRouter(tt.baseURL, db).ServeHTTP(res, req)
 			result := res.Result()
 			defer result.Body.Close()
 
@@ -59,7 +71,7 @@ func TestMakeRegistrURL(t *testing.T) {
 			}
 
 			shortURL := res.Body.String()
-			const prefix = "http://localhost:8080/"
+			prefix := tt.wantPrefix
 			if !strings.HasPrefix(shortURL, prefix) {
 				t.Fatalf("body = %q, want URL starting with %q", shortURL, prefix)
 			}
@@ -106,7 +118,7 @@ func TestMakeGetURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := DB{"abc123": "https://example.com/path?q=hello"}
-			mux := newRouter("localhost:8080", "localhost:8080", db)
+			mux := newRouter("http://localhost:8080", db)
 			req := httptest.NewRequest(tt.method, tt.path, nil)
 			res := httptest.NewRecorder()
 

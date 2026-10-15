@@ -7,5 +7,5 @@ import (
 
 func main() {
 	ParseFlag()
-	handler.RunApp(config.BaseURL, config.BaseGetURL)
+	handler.RunApp(config.ServerAddress, config.BaseURL)
 }

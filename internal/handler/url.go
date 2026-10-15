@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type DB map[string]string
 
-func MakeRegistrURL(baseURL string, baseGetURL string, db DB) http.HandlerFunc {
+func MakeRegisterURL(baseURL string, db DB) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		data, err := io.ReadAll(req.Body)
 
@@ -24,7 +25,7 @@ func MakeRegistrURL(baseURL string, baseGetURL string, db DB) http.HandlerFunc {
 
 		db[id] = string(data)
 
-		body := fmt.Sprintf("http://%s/%s", baseGetURL, id)
+		body := fmt.Sprintf("%s/%s", strings.TrimRight(baseURL, "/"), id)
 
 		res.Header().Set("Content-Type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
@@ -47,16 +48,17 @@ func MakeGetURL(db DB) http.HandlerFunc {
 	})
 }
 
-func newRouter(baseURL string, baseGetURL string, db DB) http.Handler {
+func newRouter(baseURL string, db DB) http.Handler {
 	router := chi.NewRouter()
-	router.Post("/", MakeRegistrURL(baseURL, baseGetURL, db))
+	router.Post("/", MakeRegisterURL(baseURL, db))
 	router.Get("/{id}", MakeGetURL(db))
 	return router
 }
 
-func RunApp(baseURL string, baseGetURL string) {
+func RunApp(serverAddress string, baseURL string) {
 	db := make(DB)
-	err := http.ListenAndServe(baseURL, newRouter(baseURL, baseGetURL, db))
+
+	err := http.ListenAndServe(serverAddress, newRouter(baseURL, db))
 	if err != nil {
 		panic(err)
 	}
