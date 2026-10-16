@@ -11,6 +11,7 @@ import (
 func ParseFlag() {
 	flag.StringVar(&config.ServerAddress, "a", config.ServerAddress, "установить адрес")
 	flag.StringVar(&config.BaseURL, "b", config.BaseURL, "установить адрес запроса урла")
+	flag.StringVar(&config.LogLevel, "l", config.LogLevel, "установить уровень логгирования")
 	flag.Parse()
 
 	if serverAddress := os.Getenv("SERVER_ADDRESS"); serverAddress != "" {
@@ -19,6 +20,10 @@ func ParseFlag() {
 
 	if baseURL := os.Getenv("BASE_URL"); baseURL != "" {
 		config.BaseURL = baseURL
+	}
+
+	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
+		config.LogLevel = logLevel
 	}
 
 	config.ServerAddress = trimScheme(config.ServerAddress)

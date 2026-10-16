@@ -9,7 +9,7 @@ import (
 )
 
 func TestParseFlag(t *testing.T) {
-	defaultServer, defaultBase := config.ServerAddress, config.BaseURL
+	defaultServer, defaultBase, defaultLogLevel := config.ServerAddress, config.BaseURL, config.LogLevel
 	tests := []struct {
 		name       string
 		args       []string
@@ -82,21 +82,21 @@ func TestParseFlag(t *testing.T) {
 		},
 	}
 
-	// These tests change process globals, so they must run sequentially.+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			oldFlags, oldArgs := flag.CommandLine, os.Args
-			oldServer, oldBase := config.ServerAddress, config.BaseURL
+			oldServer, oldBase, oldLogLevel := config.ServerAddress, config.BaseURL, config.LogLevel
 			t.Cleanup(func() {
 				flag.CommandLine, os.Args = oldFlags, oldArgs
 				config.ServerAddress, config.BaseURL = oldServer, oldBase
+				config.LogLevel = oldLogLevel
 			})
 			flag.CommandLine = flag.NewFlagSet("shortener", flag.ContinueOnError)
 			os.Args = append([]string{"shortener"}, tt.args...)
 			config.ServerAddress, config.BaseURL = defaultServer, defaultBase
+			config.LogLevel = defaultLogLevel
 
-			for _, key := range []string{"SERVER_ADDRESS", "BASE_URL"} {
-				// Setenv registers cleanup for the original environment value.
+			for _, key := range []string{"SERVER_ADDRESS", "BASE_URL", "LOG_LEVEL"} {
 				t.Setenv(key, "")
 				if err := os.Unsetenv(key); err != nil {
 					t.Fatal(err)
@@ -113,6 +113,79 @@ func TestParseFlag(t *testing.T) {
 			}
 			if config.BaseURL != tt.wantBase {
 				t.Errorf("BaseURL = %q, want %q", config.BaseURL, tt.wantBase)
+			}
+		})
+	}
+}
+
+func TestParseFlagLogLevel(t *testing.T) {
+	defaultLogLevel := config.LogLevel
+	tests := []struct {
+		name string
+		args []string
+		env  map[string]string
+		want string
+	}{
+		{
+			name: "default without flags or environment",
+			want: defaultLogLevel,
+		},
+		{
+			name: "flag overrides default",
+			args: []string{"-l", "debug"},
+			want: "debug",
+		},
+		{
+			name: "environment overrides default",
+			env:  map[string]string{"LOG_LEVEL": "warn"},
+			want: "warn",
+		},
+		{
+			name: "environment overrides flag",
+			args: []string{"-l", "debug"},
+			env:  map[string]string{"LOG_LEVEL": "info"},
+			want: "info",
+		},
+		{
+			name: "empty environment falls back to flag",
+			args: []string{"-l", "debug"},
+			env:  map[string]string{"LOG_LEVEL": ""},
+			want: "debug",
+		},
+		{
+			name: "empty environment falls back to default",
+			env:  map[string]string{"LOG_LEVEL": ""},
+			want: defaultLogLevel,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldFlags, oldArgs := flag.CommandLine, os.Args
+			oldServer, oldBase, oldLogLevel := config.ServerAddress, config.BaseURL, config.LogLevel
+			t.Cleanup(func() {
+				flag.CommandLine, os.Args = oldFlags, oldArgs
+				config.ServerAddress, config.BaseURL, config.LogLevel = oldServer, oldBase, oldLogLevel
+			})
+
+			flag.CommandLine = flag.NewFlagSet("shortener", flag.ContinueOnError)
+			os.Args = append([]string{"shortener"}, tt.args...)
+			config.LogLevel = defaultLogLevel
+
+			for _, key := range []string{"SERVER_ADDRESS", "BASE_URL", "LOG_LEVEL"} {
+				t.Setenv(key, "")
+				if err := os.Unsetenv(key); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for key, value := range tt.env {
+				t.Setenv(key, value)
+			}
+
+			ParseFlag()
+
+			if config.LogLevel != tt.want {
+				t.Errorf("LogLevel = %q, want %q", config.LogLevel, tt.want)
 			}
 		})
 	}

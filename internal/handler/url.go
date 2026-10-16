@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"crypto/rand"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,9 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type DB map[string]string
-
-func MakeRegisterURL(baseURL string, db DB) http.HandlerFunc {
+func MakeRegisterURL(baseURL string, db URLStorage) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		data, err := io.ReadAll(req.Body)
 
@@ -21,9 +18,7 @@ func MakeRegisterURL(baseURL string, db DB) http.HandlerFunc {
 			return
 		}
 
-		id := rand.Text()
-
-		db[id] = string(data)
+		id := db.Save(string(data))
 
 		body := fmt.Sprintf("%s/%s", strings.TrimRight(baseURL, "/"), id)
 
@@ -33,11 +28,11 @@ func MakeRegisterURL(baseURL string, db DB) http.HandlerFunc {
 	})
 }
 
-func MakeGetURL(db DB) http.HandlerFunc {
+func MakeGetURL(db URLStorage) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		id := chi.URLParam(req, "id")
 
-		url, ok := db[id]
+		url, ok := db.Get(id)
 
 		if !ok {
 			http.Error(res, "Url отсутствует", http.StatusNotFound)
@@ -46,20 +41,4 @@ func MakeGetURL(db DB) http.HandlerFunc {
 
 		http.Redirect(res, req, url, http.StatusTemporaryRedirect)
 	})
-}
-
-func newRouter(baseURL string, db DB) http.Handler {
-	router := chi.NewRouter()
-	router.Post("/", MakeRegisterURL(baseURL, db))
-	router.Get("/{id}", MakeGetURL(db))
-	return router
-}
-
-func RunApp(serverAddress string, baseURL string) {
-	db := make(DB)
-
-	err := http.ListenAndServe(serverAddress, newRouter(baseURL, db))
-	if err != nil {
-		panic(err)
-	}
 }

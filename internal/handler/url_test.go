@@ -7,7 +7,20 @@ import (
 	"testing"
 )
 
-func TestMakeRegistrURL(t *testing.T) {
+type testStorage map[string]string
+
+func (s testStorage) Save(url string) string {
+	const id = "test-id"
+	s[id] = url
+	return id
+}
+
+func (s testStorage) Get(id string) (string, bool) {
+	url, ok := s[id]
+	return url, ok
+}
+
+func TestMakeRegisterURL(t *testing.T) {
 	tests := []struct {
 		name       string
 		method     string
@@ -46,12 +59,12 @@ func TestMakeRegistrURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := make(DB)
+			db := make(testStorage)
 			req := httptest.NewRequest(tt.method, "/", strings.NewReader(tt.body))
 			req.Header.Set("Content-Type", "text/plain")
 			res := httptest.NewRecorder()
 
-			newRouter(tt.baseURL, db).ServeHTTP(res, req)
+			NewRouter(tt.baseURL, db).ServeHTTP(res, req)
 			result := res.Result()
 			defer result.Body.Close()
 
@@ -117,8 +130,8 @@ func TestMakeGetURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := DB{"abc123": "https://example.com/path?q=hello"}
-			mux := newRouter("http://localhost:8080", db)
+			db := testStorage{"abc123": "https://example.com/path?q=hello"}
+			mux := NewRouter("http://localhost:8080", db)
 			req := httptest.NewRequest(tt.method, tt.path, nil)
 			res := httptest.NewRecorder()
 

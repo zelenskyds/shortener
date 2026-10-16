@@ -7,3 +7,5 @@ var BasePort = "8080"
 
 var ServerAddress = fmt.Sprintf("%s:%s", BaseHost, BasePort)
 var BaseURL = fmt.Sprintf("http://%s", ServerAddress)
+
+var LogLevel = "INFO"
